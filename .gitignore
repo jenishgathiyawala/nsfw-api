@@ -1,0 +1,19 @@
+# Python / tooling
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Local settings and secrets
+.env
+.env.*
+
+# Test photos: private, never commit
+New Folder With Items 2/
+dataset/
+datasets/

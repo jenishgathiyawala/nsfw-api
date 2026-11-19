@@ -1,0 +1,29 @@
+[project]
+name = "nsfw-api"
+version = "2.0.0"
+description = "SFW/NSFW image classification API (Open_NSFW, TFLite)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.115,<1",
+    "uvicorn[standard]>=0.30",
+    "python-multipart>=0.0.9",
+    "pillow>=10.4",
+    "numpy>=1.26",
+    "ai-edge-litert>=2.0",
+    "onnxruntime>=1.17,<1.24 ; python_full_version < '3.11'",
+    "onnxruntime>=1.24 ; python_full_version >= '3.11'",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "httpx>=0.27",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
