@@ -51,7 +51,10 @@ uv run pytest         # tests
 
 ## Docker
 
+Compose needs an API key in a `.env` file (git ignores it):
+
 ```bash
+echo "API_KEYS=$(openssl rand -hex 32)" > .env
 docker compose up -d --build     # build and start in the background
 docker compose logs -f           # follow logs
 docker compose down              # stop
@@ -61,8 +64,10 @@ Or without compose:
 
 ```bash
 docker build -t nsfw-api .
-docker run --rm -p 8000:8000 nsfw-api
+docker run --rm -p 8000:8000 -e API_KEYS=your-secret-key nsfw-api
 ```
+
+To host it for free on Oracle Cloud, follow [docs/deploy-oracle.md](docs/deploy-oracle.md).
 
 - The image uses Python 3.12, runs as a non-root user and includes both models. It does not
   include tests, scripts or test photos (see `.dockerignore`). Size is about 700 MB unpacked.
@@ -73,6 +78,19 @@ docker run --rm -p 8000:8000 nsfw-api
 - Memory use is about 160 MB with 2 interpreters.
 - Docker on Apple Silicon builds an ARM64 image. To build for an x86_64 server from a Mac,
   use `docker build --platform linux/amd64 -t nsfw-api .`
+
+## API key
+
+When `API_KEYS` is set, every `/predict*` request needs the header `X-API-Key: <key>`,
+otherwise it gets **401**. `/health`, `/` and `/docs` stay open. In `/docs`, click
+**Authorize** and paste the key.
+
+- Without `API_KEYS` anyone can use the API, which is only fine on your own machine.
+  The server logs a warning at start.
+- Several keys can be given, comma-separated. To change a key: add the new one, update the
+  backend, then remove the old one.
+- Keep the key only in your backend (e.g. Laravel `.env`). Never put it in a mobile or web
+  app: anyone can pull it out of the app.
 
 ## Endpoints
 
@@ -87,7 +105,7 @@ Optional query parameters on `/predict` and `/predict/batch`: `threshold` (Open_
 default 0.8) and `nudenet_threshold` (default 0.6).
 
 ```bash
-curl -F "file=@photo.jpg" "http://127.0.0.1:8000/predict"
+curl -H "X-API-Key: your-secret-key" -F "file=@photo.jpg" "http://127.0.0.1:8000/predict"
 ```
 
 ```json
@@ -123,7 +141,7 @@ Batch responses list every image separately. A broken image fails only its own i
 (`error` set, `result` null), not the whole request.
 
 Errors return `{"detail": "..."}`: **400** not an image / empty / bad base64,
-**413** file or pixel count over the limit, **415** unsupported format, **422** invalid parameters.
+**401** missing or wrong API key, **413** file or pixel count over the limit, **415** unsupported format, **422** invalid parameters.
 
 ## How an image is processed
 
@@ -156,6 +174,7 @@ Errors return `{"detail": "..."}`: **400** not an image / empty / bad base64,
 | `MAX_BATCH_SIZE` | `20` | Images per batch request |
 | `MAX_PIXELS` | `50000000` | Decoded size limit |
 | `MAX_FRAMES` | `8` | Frames checked per animation |
+| `API_KEYS` | *(empty = no key needed)* | Comma-separated keys for the `X-API-Key` header |
 | `CORS_ORIGINS` | *(empty = CORS off)* | Comma-separated allowed origins |
 
 ## Check accuracy on your own photos

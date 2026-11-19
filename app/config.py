@@ -56,6 +56,10 @@ class Settings:
     # Empty = CORS disabled (same-origin and non-browser clients only).
     cors_origins: tuple[str, ...] = ()
 
+    # Keys accepted in the X-API-Key header. Several allow rotating a key without downtime.
+    # Empty = no key needed (local development only).
+    api_keys: tuple[str, ...] = ()
+
     @property
     def max_request_bytes(self) -> int:
         """Hard cap on a request body: a full batch plus multipart overhead."""
@@ -77,4 +81,5 @@ class Settings:
             max_pixels=_int("MAX_PIXELS", defaults.max_pixels),
             max_frames=_int("MAX_FRAMES", defaults.max_frames),
             cors_origins=_list("CORS_ORIGINS"),
+            api_keys=_list("API_KEYS"),
         )

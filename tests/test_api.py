@@ -139,3 +139,22 @@ def test_security_headers(client):
     headers = client.get("/health").headers
     assert headers["x-content-type-options"] == "nosniff"
     assert headers["x-frame-options"] == "DENY"
+
+
+def test_api_key_required_when_set(settings):
+    from dataclasses import replace
+
+    from fastapi.testclient import TestClient
+
+    from app.main import create_app
+
+    with TestClient(create_app(replace(settings, api_keys=("old-key", "new-key")))) as c:
+        image = upload(make_image())
+        assert c.post("/predict", files=image).status_code == 401
+        assert c.post("/predict", files=image, headers={"X-API-Key": "wrong"}).status_code == 401
+        assert c.post("/predict/base64", json={"image": "x"}).status_code == 401
+        assert c.post("/predict/batch", files=[("files", ("a.jpg", make_image(), "image/jpeg"))]).status_code == 401
+        for key in ("old-key", "new-key"):
+            assert c.post("/predict", files=image, headers={"X-API-Key": key}).status_code == 200
+        # Health stays open for container health checks and uptime monitors.
+        assert c.get("/health").status_code == 200

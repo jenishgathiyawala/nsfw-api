@@ -5,15 +5,17 @@ from __future__ import annotations
 import asyncio
 import base64
 import binascii
+import hmac
 import logging
 import time
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, File, HTTPException, Query, Request, UploadFile, status
+from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, Security, UploadFile, status
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.security import APIKeyHeader
 
 from app import __version__
 from app.classifier import CLASSES, NSFWClassifier
@@ -33,6 +35,7 @@ logger = logging.getLogger("nsfw_api")
 
 ERRORS = {
     400: {"model": ErrorResponse, "description": "Not a valid image"},
+    401: {"model": ErrorResponse, "description": "Missing or wrong API key"},
     413: {"model": ErrorResponse, "description": "File or image dimensions too large"},
     415: {"model": ErrorResponse, "description": "Unsupported image format"},
 }
@@ -45,8 +48,29 @@ NudeNetThresholdQuery = Query(
 )
 
 
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+
 def create_app(settings: Optional[Settings] = None) -> FastAPI:
     settings = settings or Settings.from_env()
+    valid_keys = [key.encode() for key in settings.api_keys]
+
+    async def require_api_key(key: Optional[str] = Security(api_key_header)) -> None:
+        if not valid_keys:
+            return
+        given = (key or "").encode()
+        # Constant-time compare against every key, so timing reveals nothing.
+        matched = False
+        for valid in valid_keys:
+            matched |= hmac.compare_digest(given, valid)
+        if not matched:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Missing or invalid API key.",
+                headers={"WWW-Authenticate": "API-Key"},
+            )
+
+    protected = [Depends(require_api_key)]
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -69,6 +93,8 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             ", ".join(app.state.classifier.models),
             settings.num_interpreters,
         )
+        if not valid_keys:
+            logger.warning("API_KEYS is not set: anyone who can reach this server can use it.")
         yield
 
     app = FastAPI(
@@ -162,7 +188,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             version=__version__,
         )
 
-    @app.post("/predict", response_model=Prediction, responses=ERRORS, tags=["classify"])
+    @app.post("/predict", dependencies=protected, response_model=Prediction, responses=ERRORS, tags=["classify"])
     async def predict(
         request: Request,
         file: UploadFile = File(..., description="JPEG, PNG, WebP, BMP, GIF or HEIC"),
@@ -179,7 +205,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             filename=file.filename,
         )
 
-    @app.post("/predict/batch", response_model=BatchResponse, responses=ERRORS, tags=["classify"])
+    @app.post("/predict/batch", dependencies=protected, response_model=BatchResponse, responses=ERRORS, tags=["classify"])
     async def predict_batch(
         request: Request,
         files: list[UploadFile] = File(..., description="Several images, field name `files`"),
@@ -224,7 +250,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             total_ms=round((time.perf_counter() - started) * 1000, 2),
         )
 
-    @app.post("/predict/base64", response_model=Prediction, responses=ERRORS, tags=["classify"])
+    @app.post("/predict/base64", dependencies=protected, response_model=Prediction, responses=ERRORS, tags=["classify"])
     async def predict_base64(request: Request, payload: Base64Request):
         """Classify an image sent as base64 in a JSON body."""
         encoded = payload.image.strip()

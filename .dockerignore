@@ -23,3 +23,4 @@ run.sh
 docker-compose.yml
 Dockerfile
 .dockerignore
+docs/
