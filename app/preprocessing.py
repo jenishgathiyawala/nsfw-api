@@ -11,12 +11,17 @@ import io
 
 import numpy as np
 from PIL import Image, ImageOps, UnidentifiedImageError
+from pillow_heif import register_heif_opener
+
+# Teach Pillow to open HEIC/HEIF (iPhone photos). pillow-heif applies the image's
+# rotation itself and resets the EXIF orientation, so exif_transpose won't rotate twice.
+register_heif_opener()
 
 BGR_MEAN = np.array([104.0, 117.0, 123.0], dtype=np.float32)
 
 # Formats are detected from the file's bytes, not from its name or MIME type.
-# MPO is what many phone cameras produce for JPEG photos.
-ALLOWED_FORMATS = frozenset({"JPEG", "MPO", "PNG", "WEBP", "BMP", "GIF"})
+# MPO is what many phone cameras produce for JPEG photos; HEIF covers .heic/.heif.
+ALLOWED_FORMATS = frozenset({"JPEG", "MPO", "PNG", "WEBP", "BMP", "GIF", "HEIF"})
 
 
 class InvalidImageError(ValueError):

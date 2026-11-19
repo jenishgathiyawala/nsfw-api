@@ -61,6 +61,21 @@ def test_exif_rotation_applied():
     assert load_frames(data, **LIMITS)[0].size == (100, 300)
 
 
+def test_heic_is_decoded():
+    frames = load_frames(make_image("HEIF", size=(300, 200), color=(10, 200, 30)), **LIMITS)
+    assert len(frames) == 1
+    assert frames[0].size == (300, 200)
+    r, g, b = frames[0].getpixel((150, 100))
+    assert g > 150 and r < 60 and b < 80  # lossy, so only roughly the same colour
+
+
+def test_heic_rotation_applied_once():
+    exif = Image.Exif()
+    exif[0x0112] = 6  # "rotate 90° clockwise to display"
+    data = make_image("HEIF", size=(300, 100), exif=exif.tobytes())
+    assert load_frames(data, **LIMITS)[0].size == (100, 300)
+
+
 def test_animated_gif_frames_are_sampled():
     frames = [Image.new("RGB", (64, 64), (i * 10, 0, 0)) for i in range(20)]
     buffer = io.BytesIO()

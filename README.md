@@ -10,16 +10,69 @@ A FastAPI service that labels images **SFW** or **NSFW** with two small local mo
 An image is **NSFW if either model says so**. They catch different photos: Open_NSFW
 judges the overall image, NudeNet finds small or partial nudity.
 
+## Setup on a new machine
+
+1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) (it also installs Python if needed):
+
+   ```bash
+   # macOS / Linux
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   # Windows (PowerShell)
+   powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+   ```
+
+2. Clone and start. The first start installs dependencies from `uv.lock` (about a minute):
+
+   ```bash
+   git clone <repo-url> nsfw-api && cd nsfw-api
+   ./run.sh              # http://127.0.0.1:8000, docs at /docs
+   ```
+
+   Windows has no `./run.sh`; use:
+
+   ```bash
+   uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
+   ```
+
+Both model files are in the repository, so nothing else needs downloading.
+
+**Supported:** Python 3.10–3.14 on macOS (Apple Silicon), Linux x86_64 / ARM64
+(glibc 2.27+, e.g. Ubuntu 18.04+) and Windows x64.
+**Not supported:** Intel Macs. The TFLite runtime (`ai-edge-litert`) has no build for them.
+
 ## Run
 
-Requires [uv](https://docs.astral.sh/uv/).
-
 ```bash
-uv sync               # creates .venv from uv.lock
 ./run.sh              # http://127.0.0.1:8000, docs at /docs
 ./run.sh --reload     # restart on code changes (watches app/ only)
-uv run pytest
+PORT=9000 ./run.sh    # another port
+uv run pytest         # tests
 ```
+
+## Docker
+
+```bash
+docker compose up -d --build     # build and start in the background
+docker compose logs -f           # follow logs
+docker compose down              # stop
+```
+
+Or without compose:
+
+```bash
+docker build -t nsfw-api .
+docker run --rm -p 8000:8000 nsfw-api
+```
+
+- The image uses Python 3.12, runs as a non-root user and includes both models. It does not
+  include tests, scripts or test photos (see `.dockerignore`). Size is about 700 MB unpacked.
+- `docker-compose.yml` publishes the port on **127.0.0.1 only**, with a read-only filesystem
+  and a 1 GB memory limit. Set thresholds and the other variables from
+  [Configuration](#configuration-environment-variables) under `environment:`.
+- A container health check calls `/health` every 30 seconds.
+- Memory use is about 160 MB with 2 interpreters.
+- Docker on Apple Silicon builds an ARM64 image. To build for an x86_64 server from a Mac,
+  use `docker build --platform linux/amd64 -t nsfw-api .`
 
 ## Endpoints
 
@@ -74,7 +127,7 @@ Errors return `{"detail": "..."}`: **400** not an image / empty / bad base64,
 
 ## How an image is processed
 
-1. **Format check from the bytes**: JPEG, PNG, WebP, BMP or GIF. File names and MIME types are ignored.
+1. **Format check from the bytes**: JPEG, PNG, WebP, BMP, GIF or HEIC (iPhone). File names and MIME types are ignored.
 2. **Pixel limit**: dimensions are read from the header before decoding, which blocks decompression bombs.
 3. **Normalize**: apply EXIF rotation and place transparent pixels on white.
 4. **Open_NSFW**: instead of squashing the photo into a square, which distorts body shapes in

@@ -165,7 +165,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
     @app.post("/predict", response_model=Prediction, responses=ERRORS, tags=["classify"])
     async def predict(
         request: Request,
-        file: UploadFile = File(..., description="JPEG, PNG, WebP, BMP or GIF"),
+        file: UploadFile = File(..., description="JPEG, PNG, WebP, BMP, GIF or HEIC"),
         threshold: Optional[float] = ThresholdQuery,
         nudenet_threshold: Optional[float] = NudeNetThresholdQuery,
     ):

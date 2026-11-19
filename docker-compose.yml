@@ -1,0 +1,24 @@
+# docker compose up -d --build
+services:
+  nsfw-api:
+    build: .
+    image: nsfw-api:latest
+    container_name: nsfw-api
+    restart: unless-stopped
+    ports:
+      # Bound to localhost only. To reach it from another machine, put it behind a
+      # reverse proxy with HTTPS (or change to "8000:8000" on a private network).
+      - "127.0.0.1:8000:8000"
+    environment:
+      DEFAULT_THRESHOLD: "0.8"
+      NUDENET_THRESHOLD: "0.6"
+      ENABLE_NUDENET: "true"
+      NUM_INTERPRETERS: "2"
+      THREADS_PER_INTERPRETER: "2"
+      MAX_UPLOAD_MB: "15"
+    mem_limit: 1g
+    read_only: true
+    tmpfs:
+      - /tmp  # multipart uploads are spooled here
+    security_opt:
+      - no-new-privileges:true

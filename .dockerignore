@@ -1,0 +1,25 @@
+# Only the app, models and dependency files go into the image.
+.git/
+.gitignore
+.venv/
+**/__pycache__/
+**/*.py[cod]
+.pytest_cache/
+**/.DS_Store
+.idea/
+.vscode/
+.env
+.env.*
+
+# Private test photos
+dataset/
+datasets/
+New Folder With Items 2/
+
+# Not needed at runtime
+tests/
+scripts/
+run.sh
+docker-compose.yml
+Dockerfile
+.dockerignore

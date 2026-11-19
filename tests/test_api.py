@@ -75,6 +75,12 @@ def test_format_detected_from_bytes_not_name(client):
     assert response.status_code == 200
 
 
+def test_predict_heic(client):
+    response = client.post("/predict", files=upload(make_image("HEIF"), "IMG_0001.HEIC", "image/heic"))
+    assert response.status_code == 200
+    assert response.json()["filename"] == "IMG_0001.HEIC"
+
+
 @pytest.mark.parametrize(
     "data, code",
     [
