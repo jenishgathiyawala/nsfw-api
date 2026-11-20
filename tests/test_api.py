@@ -10,6 +10,12 @@ def upload(data: bytes, name: str = "photo.jpg", mime: str = "image/jpeg"):
     return {"file": (name, data, mime)}
 
 
+def test_root_links_to_source(client):
+    body = client.get("/").json()
+    assert body["source"].startswith("https://")
+    assert body["license"] == "AGPL-3.0"
+
+
 def test_health(client):
     body = client.get("/health").json()
     assert body["status"] == "ok"

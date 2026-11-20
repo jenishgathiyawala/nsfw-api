@@ -18,7 +18,7 @@ COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-install-project
 
-COPY nsfw.tflite nudenet_320n.onnx ./
+COPY nsfw.tflite nudenet_320n.onnx LICENSE THIRD_PARTY_NOTICES.md ./
 COPY app ./app
 
 # Run as an unprivileged user.

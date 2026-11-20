@@ -1,8 +1,10 @@
 [project]
 name = "nsfw-api"
 version = "2.0.0"
-description = "SFW/NSFW image classification API (Open_NSFW, TFLite)"
+description = "SFW/NSFW image classification API (Open_NSFW + NudeNet)"
 readme = "README.md"
+license = "AGPL-3.0-only"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
 requires-python = ">=3.10"
 dependencies = [
     "fastapi>=0.115,<1",

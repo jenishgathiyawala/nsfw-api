@@ -101,7 +101,8 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         title="NSFW Image Classification API",
         description=(
             "Classifies images as SFW or NSFW with two models: Open_NSFW (whole-image score, TFLite) "
-            "and NudeNet (exposed body-part detector, ONNX). NSFW if either model says so."
+            "and NudeNet (exposed body-part detector, ONNX). NSFW if either model says so.\n\n"
+            f"Source code (AGPL-3.0): {settings.source_url}"
         ),
         version=__version__,
         lifespan=lifespan,
@@ -173,7 +174,14 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
 
     @app.get("/", include_in_schema=False)
     async def root():
-        return {"service": app.title, "version": __version__, "docs": "/docs", "health": "/health"}
+        return {
+            "service": app.title,
+            "version": __version__,
+            "docs": "/docs",
+            "health": "/health",
+            "source": settings.source_url,
+            "license": "AGPL-3.0",
+        }
 
     @app.get("/health", response_model=Health, tags=["status"])
     async def health(request: Request):

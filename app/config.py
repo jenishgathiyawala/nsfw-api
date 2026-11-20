@@ -60,6 +60,10 @@ class Settings:
     # Empty = no key needed (local development only).
     api_keys: tuple[str, ...] = ()
 
+    # Where users of this server can get its source code (AGPL-3.0 section 13).
+    # Change it to your fork if you run a modified version.
+    source_url: str = "https://github.com/jenishgathiyawala/nsfw-api"
+
     @property
     def max_request_bytes(self) -> int:
         """Hard cap on a request body: a full batch plus multipart overhead."""
@@ -82,4 +86,5 @@ class Settings:
             max_frames=_int("MAX_FRAMES", defaults.max_frames),
             cors_origins=_list("CORS_ORIGINS"),
             api_keys=_list("API_KEYS"),
+            source_url=os.environ.get("SOURCE_URL") or defaults.source_url,
         )

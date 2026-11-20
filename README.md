@@ -4,11 +4,20 @@ A FastAPI service that labels images **SFW** or **NSFW** with two small local mo
 
 | Model | File | What it does |
 |---|---|---|
-| Open_NSFW (Yahoo, ResNet-50, TFLite) | [`nsfw.tflite`](nsfw.tflite), 23 MB | One NSFW probability for the whole image |
-| NudeNet 320n (YOLOv8n, ONNX) | [`nudenet_320n.onnx`](nudenet_320n.onnx), 12 MB | Finds exposed body parts, with boxes |
+| [Open_NSFW](https://github.com/yahoo/open_nsfw) (Yahoo, ResNet-50, TFLite) | [`nsfw.tflite`](nsfw.tflite), 23 MB | One NSFW probability for the whole image |
+| [NudeNet](https://github.com/notAI-tech/NudeNet) 320n (YOLOv8n, ONNX) | [`nudenet_320n.onnx`](nudenet_320n.onnx), 12 MB | Finds exposed body parts, with boxes |
 
 An image is **NSFW if either model says so**. They catch different photos: Open_NSFW
 judges the overall image, NudeNet finds small or partial nudity.
+
+Everything runs on your own server: images are not sent anywhere and are not stored.
+
+> **Not 100% accurate.** On a small test set (100 photos) it got 93% right: it missed
+> 5 of 50 NSFW photos and wrongly flagged 2 of 50 safe ones. Results on your photos will
+> differ. Check it on your own photos (see [below](#check-accuracy-on-your-own-photos)) and
+> keep human review, a report button or both where a miss matters. It is not built to
+> detect illegal content such as child sexual abuse material; use a dedicated service
+> for that.
 
 ## Setup on a new machine
 
@@ -24,7 +33,7 @@ judges the overall image, NudeNet finds small or partial nudity.
 2. Clone and start. The first start installs dependencies from `uv.lock` (about a minute):
 
    ```bash
-   git clone <repo-url> nsfw-api && cd nsfw-api
+   git clone https://github.com/jenishgathiyawala/nsfw-api.git && cd nsfw-api
    ./run.sh              # http://127.0.0.1:8000, docs at /docs
    ```
 
@@ -68,7 +77,8 @@ docker build -t nsfw-api .
 docker run --rm -p 8000:8000 -e API_KEYS=your-secret-key nsfw-api
 ```
 
-To host it for free on Oracle Cloud, follow [docs/deploy-oracle.md](docs/deploy-oracle.md).
+To host it for free on Oracle Cloud, follow [docs/deploy-oracle.md](docs/deploy-oracle.md)
+(step by step, written in Hinglish).
 
 - The image uses Python 3.12, runs as a non-root user and includes both models. It does not
   include tests, scripts or test photos (see `.dockerignore`). Size is about 700 MB unpacked.
@@ -177,6 +187,7 @@ Errors return `{"detail": "..."}`: **400** not an image / empty / bad base64,
 | `MAX_FRAMES` | `8` | Frames checked per animation |
 | `API_KEYS` | *(empty = no key needed)* | Comma-separated keys for the `X-API-Key` header |
 | `CORS_ORIGINS` | *(empty = CORS off)* | Comma-separated allowed origins |
+| `SOURCE_URL` | this GitHub repo | Source code link shown at `/` (AGPL). Set it to your fork if you change the code |
 
 ## Check accuracy on your own photos
 
@@ -207,9 +218,24 @@ app/
   main.py           FastAPI app, routes, error mapping
 scripts/evaluate.py accuracy on your own labelled photos
 tests/              pytest suite (runs against the real models)
+docs/               deploy guide (Oracle Cloud)
 ```
 
-## Licences
+## Contributing and security
 
-Open_NSFW is BSD-2-Clause (Yahoo). NudeNet is listed as MIT on PyPI. Its model is trained
-with Ultralytics YOLOv8 (AGPL-3.0), so check the licence before using it in a commercial product.
+- How to set up, test and send changes: [CONTRIBUTING.md](CONTRIBUTING.md).
+- Found a security problem? Don't open a public issue; see [SECURITY.md](SECURITY.md).
+
+## Licence
+
+This project is licensed under the **GNU AGPL-3.0**, see [LICENSE](LICENSE).
+
+In short: you can use, change and share it for free, also commercially. If you change it and
+share it, or let people use your changed version over a network, you must publish your
+changed source code under the same licence.
+
+Apps that only call this API over HTTP (a backend, a mobile app) are separate programs and
+do not have to be open-sourced. This is a summary, not legal advice.
+
+The model files have their own licences: Open_NSFW is BSD-2-Clause (Yahoo), NudeNet is
+AGPL-3.0. Details and the required notices: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
