@@ -46,6 +46,7 @@ Both model files are in the repository, so nothing else needs downloading.
 ./run.sh              # http://127.0.0.1:8000, docs at /docs
 ./run.sh --reload     # restart on code changes (watches app/ only)
 PORT=9000 ./run.sh    # another port
+API_KEYS=mykey123 ./run.sh   # require the X-API-Key header (see API key below)
 uv run pytest         # tests
 ```
 
